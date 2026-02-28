@@ -1,0 +1,78 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"   // Change to "postgresql" for Postgres
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId       Int       @id @default(autoincrement()) @map("user_id")
+  name         String    @db.VarChar(100)
+  email        String    @unique @db.VarChar(100)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  createdProjects Project[]       @relation("ProjectCreator")
+  memberships     ProjectMember[]
+  assignedTasks   Task[]          @relation("TaskAssignee")
+
+  @@map("users")
+}
+
+model Project {
+  projectId   Int       @id @default(autoincrement()) @map("project_id")
+  name        String    @db.VarChar(200)
+  description String?   @db.Text
+  createdBy   Int       @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  creator User            @relation("ProjectCreator", fields: [createdBy], references: [userId], onDelete: Cascade)
+  members ProjectMember[]
+  tasks   Task[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  projectId Int    @map("project_id")
+  userId    Int    @map("user_id")
+  role      Role   @default(member)
+
+  project Project @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([projectId, userId])
+  @@map("project_members")
+}
+
+model Task {
+  taskId      Int        @id @default(autoincrement()) @map("task_id")
+  projectId   Int        @map("project_id")
+  title       String     @db.VarChar(200)
+  description String?    @db.Text
+  assigneeId  Int?       @map("assignee_id")
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?  @map("due_date") @db.Date
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  project  Project @relation(fields: [projectId], references: [projectId], onDelete: Cascade)
+  assignee User?   @relation("TaskAssignee", fields: [assigneeId], references: [userId], onDelete: SetNull)
+
+  @@map("tasks")
+}
+
+enum Role {
+  member
+  admin
+  owner
+}
+
+enum TaskStatus {
+  TODO      @map("To-Do")
+  IN_PROGRESS @map("In Progress")
+  DONE      @map("Done")
+}
