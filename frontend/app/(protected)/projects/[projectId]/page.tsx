@@ -136,7 +136,11 @@ export default function ProjectDetailPage() {
     setAddingMember(true);
     try {
       const newMember = await projectsApi.addMember(projectId, searchResult.userId, memberRole);
-      setMembers((prev) => [...prev, { ...(newMember as any), user: searchResult }]);
+      setMembers((prev) => [...prev, { 
+  userId: searchResult.userId, 
+  role: memberRole, 
+  user: searchResult 
+}]);
       setMemberSuccess(`${searchResult.name} added as ${memberRole}.`);
       setSearchResult(null);
       setSearchEmail('');
